@@ -9,6 +9,7 @@
 - `postcss-loader`
 - `SplitChunksPlugin`
 - `babel-loader`
+- `es-lint`
 
 下面将分别对其描述：
 
