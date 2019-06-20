@@ -514,3 +514,202 @@ trim_trailing_whitespace = true
 >同样需要在IDE中安装editorconfig插件。
 
 以上就是eslint的配置方法了。
+
+
+#### 模块热替换
+
+在webpack.config.js中引入webpack:
+```js
+const webpack = require('webpack')
+```
+
+在plugins数组中添加：
+```js
+new webpack.NamedModulesPlugin(),
+new webpack.HotModuleReplacementPlugin()
+```
+
+给devServer中的hot属性设为true：
+```js
+  devServer: {
+    port: 8080,      // 端口号
+    host: '0.0.0.0', // 主机名，设为该值可通过IP访问
+    overlay: {
+      errors: true   // 错误提示
+    },
+    hot: true
+  }
+```
+
+这样我们修改代码的时候就可以局部刷新模块而不是刷新整个页面了。
+
+#### 构建生产环境
+
+安装 webpack-merge :
+```js
+npm install --save-dev webpack-merge
+```
+
+在config文件夹下创建 webpack.dev.js 和 webpack.build.js 并修改 webpack.config.js，将开发与生产环境的公共配置放在webpack.config.js中：
+
+```js
+const path = require('path')
+const HtmlWebpackPlugin = require('html-webpack-plugin')
+const MiniCssExtractPlugin = require('mini-css-extract-plugin')
+
+const isDev = process.env.NODE_ENV === 'development'
+
+const config = {
+  entry: {
+    main: path.join(__dirname, '../src/main.js')
+  },
+  output: {
+    filename: '[name].bundle.js',
+    path: path.join(__dirname, '../dist')
+  },
+  module: {
+    rules: [
+      {
+        test: /\.(vue|js|jsx)$/,
+        loader: 'eslint-loader',
+        exclude: /node_modules/,
+        enforce: 'pre'
+      },
+      {
+        test: /\.js$/,
+        loader: 'babel-loader',
+        exclude: /node_modules/
+      },
+      {
+        test: /\.vue$/,
+        loader: 'vue-loader',
+        options: createVueLoaderOptions(isDev)
+      },
+      {
+        test: /\.ejs$/,
+        use: ['ejs-loader']
+      },
+      {
+        test: /\.css$/,
+        use: [
+          isDev ? 'vue-style-loader' : MiniCssExtractPlugin.loader,
+          { loader: 'css-loader', options: { importLoaders: 1 } },
+          'postcss-loader'
+        ]
+      },
+      {
+        test: /\.less$/,
+        use: [
+          isDev ? 'vue-style-loader' : MiniCssExtractPlugin.loader,
+          'css-loader',
+          {
+            loader: 'postcss-loader',
+            options: {
+              sourceMap: true
+            }
+          },
+          'less-loader'
+        ]
+      },
+      {
+        test: /\.(jpg|jpeg|png|gif|svg)$/,
+        use: [
+          {
+            loader: 'url-loader',
+            options: {
+              name: '[path][name]-[hash:5].[ext]',
+              limit: 1024
+            }
+          }
+        ]
+      }
+    ]
+  },
+  plugins: [
+    new HtmlWebpackPlugin({
+      template: path.join(__dirname, '../index.html'),
+      inject: true,
+      minify: {
+        removeComments: true
+      }
+    })
+  ]
+}
+
+module.exports = config
+```
+
+
+webpack.dev.js:
+```js
+const merge = require('webpack-merge')
+const common = require('./webpack.config.js')
+
+module.exports = merge(common, {
+  mode: 'development',
+  devtool: 'inline-source-map',
+  devServer: {
+    port: 8080,
+    host: '0.0.0.0',
+    overlay: {
+      errors: true
+    },
+    historyApiFallback: {
+      index: '/index.html'
+    }
+  }
+})
+```
+
+webpack.build.js
+```js
+const path = require('path')
+const CleanWebpackPlugin = require('clean-webpack-plugin')
+const MiniCssExtractPlugin = require('mini-css-extract-plugin')
+const merge = require('webpack-merge')
+const common = require('./webpack.config.js')
+
+module.exports = merge(common, {
+  mode: 'production',
+  optimization: {
+    splitChunks: {
+      chunks: 'initial',
+      automaticNameDelimiter: '.',
+      cacheGroups: {
+        commons: {
+          name: 'commons',
+          chunks: 'initial',
+          minChunks: 2,
+          priority: 3
+        },
+        vendors: {
+          test: /[\\/]node_modules[\\/]/,
+          priority: 1
+        }
+      }
+    },
+    runtimeChunk: {
+      name: entrypoint => `manifest.${entrypoint.name}`
+    }
+  },
+  plugins: [
+    new MiniCssExtractPlugin({
+      filename: '[name].css'
+    }),
+    new CleanWebpackPlugin(
+      ['dist'],
+      {
+        root: path.join(__dirname, '../')
+      }
+    )
+  ]
+})
+```
+
+修改package.json的命令：
+```js
+"dev": "cross-env NODE_ENV=development webpack-dev-server --config config/webpack.dev.js",
+"build": "cross-env NODE_ENV=production webpack --config config/webpack.build.js --progress --inline --colors"
+```
+
+现在分别执行 npm run dev 和 npm run build 就会得到你想要的了。

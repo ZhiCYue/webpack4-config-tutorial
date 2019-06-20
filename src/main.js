@@ -2,6 +2,7 @@ import 'babel-polyfill'
 import Modal from './components/modal/modal'
 import './assets/style/common.less'
 import _ from 'lodash'
+
 const App = function () {
   let div = document.createElement('div')
   div.setAttribute('id', 'app')
