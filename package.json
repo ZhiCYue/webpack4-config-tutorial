@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "deb": "webpack-dev-server",
+    "dev": "webpack-dev-server",
     "build": "webpack",
     "lint": "eslint --ext .js --ext .vue src/",
     "lint-fix": "eslint --fix --ext .js --ext .jsx --ext .vue src/"
@@ -24,6 +24,7 @@
     "eslint": "^5.16.0",
     "eslint-config-standard": "^12.0.0",
     "eslint-loader": "^2.1.2",
+    "eslint-plugin-html": "^5.0.5",
     "eslint-plugin-import": "^2.17.3",
     "eslint-plugin-node": "^9.1.0",
     "eslint-plugin-promise": "^4.1.1",
